@@ -1,122 +1,247 @@
 ---
-title: Session
-sidebar: example
+title: Full Session Examples
+description: Complete worked examples for using a pyhive-integration session with all device types — async and sync.
+sidebar: main
 ---
-# Session Examples
 
-Below are examples on how to use the library with a Hive session.
+# Full Session Examples
 
-# Log in - Using Hive Username and Password with MFA(if required)
+---
 
-Below is an example of how to log in to Hive using your Hive Username and Hive password, using 2FA if needed, to create a pyhiveapi `session` object.
-NOTE - as part of Hive login it now registers your device as a trusted device on sucessfull login. The device data will be needed for further logins in the future, this libary has a device login method to support this.
+## Full async session — all device types
 
-```Python
-from pyhiveapi import Hive, SMS_REQUIRED
+```python
+import asyncio
+from apyhiveapi import Auth, Hive, SMS_REQUIRED
 
-session = Hive(username="HiveUserName", password="HivePassword")
-login = session.login()
 
-if login.get("ChallengeName") == SMS_REQUIRED:
-    code = input("Enter 2FA code: ")
-    session.sms2fa(code, login)
+async def main():
+    # ── Authentication ────────────────────────────────────
+    auth = Auth(username="you@example.com", password="yourpassword")
+    result = await auth.login()
 
-# Device data is need for future device logins
-deviceData = session.auth.getDeviceData()
-print(deviceData)
+    if result.get("ChallengeName") == SMS_REQUIRED:
+        code = input("SMS code: ")
+        result = await auth.sms_2fa(code, result)
+        device_data = auth.get_device_data()
+        # Persist device_data for future runs
+    else:
+        device_data = None  # Load from storage if available
 
-session.startSession()
+    # ── Session ───────────────────────────────────────────
+    hive = Hive(username="you@example.com", password="yourpassword")
+    config = {
+        "tokens": result,
+        "username": "you@example.com",
+        "password": "yourpassword",
+    }
+    if device_data:
+        config["device_data"] = device_data
+
+    device_list = await hive.start_session(config)
+
+    # ── Heating ───────────────────────────────────────────
+    print("\n── Heating ──")
+    for device in device_list.get("climate", []):
+        device = await hive.heating.get_climate(device)
+        s = device.status
+        print(f"  {device.ha_name}:")
+        print(f"    Current temp  : {s['current_temperature']}°")
+        print(f"    Target temp   : {s['target_temperature']}°")
+        print(f"    Mode          : {s['mode']}")
+        print(f"    Boost         : {s['boost']}")
+        print(f"    Min/max       : {device.min_temp}° – {device.max_temp}°")
+
+        schedule = await hive.heating.get_schedule_now_next_later(device)
+        if schedule:
+            print(f"    Schedule now  : {schedule['now']}")
+
+    # ── Hot water ─────────────────────────────────────────
+    print("\n── Hot Water ──")
+    for device in device_list.get("water_heater", []):
+        device = await hive.hotwater.get_water_heater(device)
+        s = device.status
+        print(f"  {device.ha_name}:")
+        print(f"    Mode   : {s['current_operation']}")
+
+        boost = await hive.hotwater.get_boost(device)
+        bt    = await hive.hotwater.get_boost_time(device)
+        print(f"    Boost  : {boost}" + (f" ({bt} min remaining)" if bt else ""))
+
+    # ── Lights ────────────────────────────────────────────
+    print("\n── Lights ──")
+    for device in device_list.get("light", []):
+        device = await hive.light.get_light(device)
+        s = device.status
+        print(f"  {device.ha_name} ({device.hive_type}):")
+        print(f"    State      : {'on' if s['state'] else 'off'}")
+        print(f"    Brightness : {s.get('brightness')}")
+        if "color_temp" in s:
+            print(f"    Color temp : {s['color_temp']} mireds")
+        if "mode" in s:
+            print(f"    Color mode : {s['mode']}")
+        if s.get("hs_color"):
+            print(f"    Color      : {s['hs_color']}")
+
+    # ── Smart plugs ───────────────────────────────────────
+    print("\n── Smart Plugs ──")
+    for device in device_list.get("switch", []):
+        if device.hive_type != "activeplug":
+            continue
+        device = await hive.switch.get_switch(device)
+        s = device.status
+        print(f"  {device.ha_name}:")
+        print(f"    State : {'on' if s['state'] else 'off'}")
+        print(f"    Power : {s.get('power_usage')} W")
+
+    # ── Sensors ───────────────────────────────────────────
+    print("\n── Sensors ──")
+    for device in device_list.get("binary_sensor", []):
+        device = await hive.sensor.get_sensor(device)
+        s = device.status
+        type_label = device.hive_type
+        print(f"  {device.ha_name} ({type_label}): {s.get('state')}")
+
+    for device in device_list.get("sensor", []):
+        device = await hive.sensor.get_sensor(device)
+        print(f"  {device.ha_name} (diagnostic): {device.status.get('state')}")
+
+    # ── Actions ───────────────────────────────────────────
+    print("\n── Actions ──")
+    for device in device_list.get("switch", []):
+        if device.hive_type != "action":
+            continue
+        result = await hive.action.get_action(device)
+        if result == "REMOVE":
+            continue
+        device = result
+        print(f"  {device.ha_name}: {'enabled' if device.status['state'] else 'disabled'}")
+
+
+asyncio.run(main())
 ```
 
-# Log in - Using Hive Device Authentication
+---
 
-Below is an example of how to log in to Hive using device authentication, to create a pyhiveapi `session` object.
+## Full sync session — all device types
+
+```python
+from pyhiveapi import Auth, Hive, SMS_REQUIRED
 
 
-```Python
-from pyhiveapi import Hive, SMS_REQUIRED
+# ── Authentication ────────────────────────────────────────
+auth = Auth(username="you@example.com", password="yourpassword")
+result = auth.login()
 
-session = Hive(
-    username="<Hive Username>",
-    password="<Hive Password>",
-    deviceGroupKey="<Hive Device Group Key>",
-    deviceKey="<Hive Device Key>",
-    devicePassword="<Hive Device Password>",
-)
-session.deviceLogin()
-session.startSession()
+if result.get("ChallengeName") == SMS_REQUIRED:
+    code = input("SMS code: ")
+    result = auth.sms_2fa(code, result)
+    device_data = auth.get_device_data()
+else:
+    device_data = None
+
+# ── Session ───────────────────────────────────────────────
+hive = Hive(username="you@example.com", password="yourpassword")
+config = {"tokens": result, "username": "you@example.com", "password": "yourpassword"}
+if device_data:
+    config["device_data"] = device_data
+
+device_list = hive.start_session(config)
+
+# ── Heating ───────────────────────────────────────────────
+for device in device_list.get("climate", []):
+    device = hive.heating.get_climate(device)
+    print(f"{device.ha_name}: {device.status['current_temperature']}° / target {device.status['target_temperature']}°")
+    hive.heating.set_target_temperature(device, 21.0)
+    hive.heating.set_mode(device, "SCHEDULE")
+
+# ── Hot water ─────────────────────────────────────────────
+for device in device_list.get("water_heater", []):
+    device = hive.hotwater.get_water_heater(device)
+    print(f"{device.ha_name}: {device.status['current_operation']}")
+    hive.hotwater.set_mode(device, "SCHEDULE")
+
+# ── Lights ────────────────────────────────────────────────
+for device in device_list.get("light", []):
+    device = hive.light.get_light(device)
+    print(f"{device.ha_name}: {'on' if device.status['state'] else 'off'}")
+    hive.light.turn_on(device, brightness=200, color_temp=None, color=None)
+    hive.light.turn_off(device)
+
+# ── Smart plugs ───────────────────────────────────────────
+for device in device_list.get("switch", []):
+    if device.hive_type == "activeplug":
+        device = hive.switch.get_switch(device)
+        print(f"{device.ha_name}: {device.status.get('power_usage')} W")
+        hive.switch.turn_on(device)
+        hive.switch.turn_off(device)
+
+# ── Sensors ───────────────────────────────────────────────
+for device in device_list.get("binary_sensor", []):
+    device = hive.sensor.get_sensor(device)
+    print(f"{device.ha_name}: {device.status.get('state')}")
+
+# ── Actions ───────────────────────────────────────────────
+for device in device_list.get("switch", []):
+    if device.hive_type == "action":
+        result = hive.action.get_action(device)
+        if result != "REMOVE":
+            device = result
+            print(f"Action {device.ha_name}: {device.status['state']}")
 ```
 
+---
 
-## Use the session object to get devices
+## Periodic polling loop (async)
 
-Below is an example of how to use the `session` object to get all devices of each type from `deviceList` and store in a separate list for each device type.
+```python
+import asyncio
+from apyhiveapi import Hive
 
-```Python
-BinarySensors = session.deviceList["binary_sensor"]
-HeatingDevices = session.deviceList["climate"]
-Lights = session.deviceList["light"]
-Sensors = session.deviceList["sensor"]
-Switches = session.deviceList["switch"]
-WaterHeaters = session.deviceList["water_heater"]
+async def polling_loop(hive, device_list):
+    while True:
+        for device in device_list.get("climate", []):
+            await hive.update_data(device)
+            device = await hive.heating.get_climate(device)
+            print(f"[{device.ha_name}] {device.status['current_temperature']}°")
+        await asyncio.sleep(30)
 ```
 
-### Use the session object to interact with heating
+---
 
-Below is an example of how to use the `session` object to interact with all the different heating actions.
+## Controlling devices after session start
 
-```Python
-if len(HeatingDevices) >= 1:
-    HeatingZone_1 = HeatingDevices[0]
-    print("HeatingZone 1 : " + str(HeatingZone_1["hiveName"]))
-    print("Get operation modes : " + str(session.heating.getOperationModes()))
-    print("Current mode : " + str(session.heating.getMode(HeatingZone_1)))
-    print("Current state : " + str(session.heating.getState(HeatingZone_1)))
-    print("Current temperature : " + str(session.heating.currentTemperature(HeatingZone_1)))
-    print("Target temperature : " + str(session.heating.targetTemperature(HeatingZone_1)))
-    print("Get Min / Max temperatures : " + str(session.heating.minmaxTemperature(HeatingZone_1)))
-    print("Get whether boost is currently On/Off : " + str(session.heating.getBoost(HeatingZone_1)))
-    print("Boost time remaining : " + str(session.heating.getBoostTime(HeatingZone_1)))
-    print("Get schedule now/next/later : " + str(session.heating.getScheduleNowNextLater(HeatingZone_1)))
-    print("Set mode to SCHEDULE: " + str(session.heating.setMode(HeatingZone_1, "SCHEDULE")))
-    print("Current operation : " + str(session.heating.currentOperation(HeatingZone_1)))
-    print("Set target temperature : " + str(session.heating.setTargetTemperature(HeatingZone_1, 15)))
-    print("Turn boost on for 30 minutes at 15c: " + str(session.heating.turnBoostOn(HeatingZone_1, 30, 15)))
-    print("Turn boost off : " + str(session.heating.turnBoostOff(HeatingZone_1)))
-```
+```python
+# Get the first heating zone
+heating_device = device_list["climate"][0]
 
-### Use the session object to interact with hotwater
+# Read latest state
+heating_device = await hive.heating.get_climate(heating_device)
 
-Below is an example of how to use the `session` object to interact with all the different hotwater actions.
+# Set temperature
+await hive.heating.set_target_temperature(heating_device, 21.5)
 
-```Python
-if len(WaterHeaters) >= 1:
-    WaterHeater_1 = WaterHeaters[0]
-    print("WaterHeater 1 : " + str(WaterHeater_1["hiveName"]))
-    print("Get operation modes : " + str(session.hotwater.getOperationModes()))
-    print("Current mode : " + str(session.hotwater.getMode(WaterHeater_1)))
-    print("Get state : " + str(session.hotwater.getState(WaterHeater_1)))
-    print("Get whether boost is currently On/Off: " + str(session.hotwater.getBoost(WaterHeater_1)))
-    print("Get boost time remaining : " + str(session.hotwater.getBoostTime(WaterHeater_1)))
-    print("Get schedule now/next/later : " + str(session.hotwater.getScheduleNowNextLater(WaterHeater_1)))
-    print("Set mode to OFF : " + str(session.hotwater.setMode(WaterHeater_1, "OFF")))
-    print("Turn boost on for 30 minutes : " + str(session.hotwater.turnBoostOn(WaterHeater_1, 30)))
-    print("Turn boost off : " + str(session.hotwater.turnBoostOff(WaterHeater_1)))
-```
+# Set mode
+await hive.heating.set_mode(heating_device, "MANUAL")
 
-### Use the session object to interact with lights
+# Boost for 30 minutes at 22°C
+await hive.heating.set_boost_on(heating_device, mins=30, temp=22.0)
 
-Below is an example of how to use the `session` object to interact with all the different light actions.
+# Cancel boost
+await hive.heating.set_boost_off(heating_device)
 
-```Python
-if len(Lights) >= 1:
-    Light_1 = Lights[0]
-    print("Light 1 : " + str(Light_1["hiveName"]))
-    print("Get state : " + str(session.light.getState(Light_1)))
-    print("Get brightness : " + str(session.light.getBrightness(Light_1)))
-    print("Get min colour temperature : " + str(session.light.getMinColorTemp(Light_1)))
-    print("Get max colour temperature : " + str(session.light.getMaxColorTemp(Light_1)))
-    print("Get colour temperature : " + str(session.light.getColorTemp(Light_1)))
-    print("Get colour : " + str(session.light.getColor(Light_1)))
-    print("Get colour mode : " + str(session.light.getColorMode(Light_1)))
+# Hot water
+hw_device = device_list["water_heater"][0]
+await hive.hotwater.set_boost_on(hw_device, mins=60)
+await hive.hotwater.set_boost_off(hw_device)
+
+# Light
+light_device = device_list["light"][0]
+await hive.light.turn_on(light_device, brightness=200, color_temp=None, color=None)
+await hive.light.turn_off(light_device)
+
+# Smart plug
+plug_device = next(d for d in device_list["switch"] if d.hive_type == "activeplug")
+await hive.switch.turn_on(plug_device)
+await hive.switch.turn_off(plug_device)
 ```

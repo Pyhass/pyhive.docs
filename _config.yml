@@ -4,12 +4,12 @@
 # ----------------------- #
 
 url: https://github.com/Pyhive
-baseurl: /pyhiveapi.docs
-title: Pyhiveapi
-subtitle: Hive integration libary
+baseurl: /pyhive.docs
+title: pyhive-integration
+subtitle: Python library for the Hive smart home platform
 author: Pyhiveapi
 simple_search: https://www.google.com/search
-description: Python libary to interface with Hive.
+description: Documentation for pyhive-integration v2.0.0 — async and sync Python library for the Hive smart home platform.
 theme: jekyll-theme-slate
 
 permalink: /blog/:year/:month/:day/:title/

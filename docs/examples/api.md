@@ -1,86 +1,167 @@
 ---
-title: API
-sidebar: example
+title: Auth & API Examples
+description: Examples for authenticating with the Hive API — first login, SMS 2FA, device login, and token management in both async and sync.
+sidebar: main
 ---
-# API Examples
 
-Below are examples on how to use the library independently with the API.
+# Auth & API Examples
 
-## Log in - Username and Password with MFA (If Required)
+---
 
-Below is an example how to log in to Hive with 2FA if needed
-and get a session token.
+## First login — Async (with SMS 2FA)
 
-```Python
-import pyhiveapi as Hive
+```python
+import asyncio
+from apyhiveapi import Auth, SMS_REQUIRED
 
-tokens = {}
-hive_auth = Hive.Auth(username="<Hive Username>", password="<Hive Password>")
-auth_data = hive_auth.login()
+async def first_login():
+    auth = Auth(username="you@example.com", password="yourpassword")
+    result = await auth.login()
 
-if auth_data.get("ChallengeName") == Hive.SMS_REQUIRED:
-    code = input("Enter your 2FA code: ")
-    auth_data = hive_auth.sms_2fa(code, auth_data)
-    hive_auth.device_registration('MyPyHiveAPIDevice')
-    print(f"device_group_key: {hive_auth.device_group_key}")
-    print(f"device_key: {hive_auth.device_key}")
-    print(f"device_password: {hive_auth.device_password}")
+    if result.get("ChallengeName") == SMS_REQUIRED:
+        code = input("SMS code: ")
+        result = await auth.sms_2fa(code, result)
+        # Device registration is automatic after sms_2fa.
+        # Save these credentials for future device logins (no SMS needed).
+        device_data = auth.get_device_data()
+        print("Device group key:", device_data[0])
+        print("Device key:",       device_data[1])
+        print("Device password:",  device_data[2])
 
-if "AuthenticationResult" in auth_data:
-    session = auth_data["AuthenticationResult"]
-    tokens.update({"token": session["IdToken"]})
-    tokens.update({"refreshToken": session["RefreshToken"]})
-    tokens.update({"accessToken": session["AccessToken"]})
+    if "AuthenticationResult" in result:
+        ar = result["AuthenticationResult"]
+        tokens = {
+            "token":        ar["IdToken"],
+            "refreshToken": ar["RefreshToken"],
+            "accessToken":  ar["AccessToken"],
+        }
+        print("Tokens:", tokens)
+        return tokens
 
+asyncio.run(first_login())
 ```
 
+---
 
-## Log in - Using Device Authentication
+## First login — Sync
 
-Below is an example how to log in to Hive with 2FA if needed
-and get a session token.
+```python
+from pyhiveapi import Auth, SMS_REQUIRED
 
-```Python
-import pyhiveapi as Hive
+auth = Auth(username="you@example.com", password="yourpassword")
+result = auth.login()
 
-tokens = {}
-hive_auth = Hive.Auth(<Hive Username>", "<Hive Password>", "Hive Device Group Key>", "<Hive Device Key>", "<Hive Device Password>")
-auth_data = hive_auth.device_login()
+if result.get("ChallengeName") == SMS_REQUIRED:
+    code = input("SMS code: ")
+    result = auth.sms_2fa(code, result)
+    device_data = auth.get_device_data()
+    print("Device data:", device_data)
 
-if "AuthenticationResult" in auth_data:
-    auth_result = session["AuthenticationResult"]
-    tokens.update({"token": session["IdToken"]})
-    tokens.update({"refreshToken": session["RefreshToken"]})
-    tokens.update({"accessToken": session["AccessToken"]})
+if "AuthenticationResult" in result:
+    ar = result["AuthenticationResult"]
+    tokens = {
+        "token":        ar["IdToken"],
+        "refreshToken": ar["RefreshToken"],
+        "accessToken":  ar["AccessToken"],
+    }
 ```
 
+---
 
-## Refresh Tokens
+## Device login — Async (no SMS, for subsequent logins)
 
-Below is an example how to refresh your session tokens
-after they have expired
+Once you have saved device credentials from the first login, pass them to `start_session` via the `device_data` key — the session handles the device login internally.
 
-```Python
-import pyhiveapi as Hive
+```python
+import asyncio
+from apyhiveapi import Hive
 
-tokens = {}
-hive_auth = Hive.Auth(<Hive Username>", "<Hive Password>", "Hive Device Group Key>", "<Hive Device Key>", "<Hive Device Password>")
-auth_data = hive_auth.device_login()
-new_tokens = hive_auth.refresh_token(tokens['AuthenticationResult']['RefreshToken'])
+async def device_login(tokens, device_group_key, device_key, device_password):
+    hive = Hive(username="you@example.com", password="yourpassword")
+    device_list = await hive.start_session({
+        "tokens": tokens,
+        "username": "you@example.com",
+        "password": "yourpassword",
+        "device_data": [device_group_key, device_key, device_password],
+    })
+    print("Devices:", list(device_list.keys()))
+    return hive, device_list
 
-if "AuthenticationResult" in new_tokens:
-    session = new_tokens["AuthenticationResult"]
-    tokens.update({"token": session["IdToken"]})
-    tokens.update({"refreshToken": session["RefreshToken"]})
-    tokens.update({"accessToken": session["AccessToken"]})
+asyncio.run(device_login(tokens, dg_key, d_key, d_password))
 ```
 
-## Get Hive Data - Using Tokens
+---
 
-Below is an example how to data from the Hive platform
-using the session token acquired from login.
+## Device login — Sync
 
-```Python
-api = Hive.API(token=tokens["token"])
-data = api.getAll()
+```python
+from pyhiveapi import Hive
+
+hive = Hive(username="you@example.com", password="yourpassword")
+device_list = hive.start_session({
+    "tokens": tokens,
+    "username": "you@example.com",
+    "password": "yourpassword",
+    "device_data": [device_group_key, device_key, device_password],
+})
 ```
+
+---
+
+## Checking for SMS requirement
+
+```python
+from apyhiveapi import Auth, SMS_REQUIRED
+from apyhiveapi.helper.hive_exceptions import (
+    HiveInvalidUsername,
+    HiveInvalidPassword,
+    HiveApiError,
+)
+
+async def safe_login():
+    auth = Auth(username="you@example.com", password="yourpassword")
+
+    try:
+        result = await auth.login()
+    except HiveInvalidUsername:
+        return None, "Invalid email address"
+    except HiveInvalidPassword:
+        return None, "Invalid password"
+    except HiveApiError:
+        return None, "Cannot reach Hive — check your internet connection"
+
+    needs_sms = result.get("ChallengeName") == SMS_REQUIRED
+    return result, None, needs_sms
+```
+
+---
+
+## Handling a bad SMS code
+
+```python
+from apyhiveapi.helper.hive_exceptions import HiveInvalid2FACode
+
+async def submit_sms(auth, code, session):
+    try:
+        return await auth.sms_2fa(code, session)
+    except HiveInvalid2FACode:
+        print("Wrong code — please try again")
+        return None
+```
+
+---
+
+## Token structure
+
+Auth tokens returned from `login()` or `sms_2fa()` have this structure under `result["AuthenticationResult"]`:
+
+| Key | Description |
+|---|---|
+| `IdToken` | The bearer token used in API requests |
+| `AccessToken` | OAuth access token |
+| `RefreshToken` | Long-lived token used to obtain new tokens |
+| `ExpiresIn` | Token lifetime in seconds (typically 3600) |
+
+When passing tokens to `start_session`, you can pass the dict directly from `login()` result, or extract and reshape into `{"token": ..., "refreshToken": ..., "accessToken": ...}`.
+
+Both formats are accepted by `start_session` / `update_tokens`.

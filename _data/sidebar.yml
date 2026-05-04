@@ -1,35 +1,87 @@
-all:
+main:
   - title: Home
-    url: /pyhiveapi.docs/
-  - title: "API"
+    url: /pyhive.docs/
+  - title: Getting Started
+    url: /pyhive.docs/docs/getting-started
+  - title: Authentication
+    url: /pyhive.docs/docs/authentication
+  - title: Session
+    url: /pyhive.docs/docs/session
+  - title: "Guides"
     children:
+      - title: Home Assistant Integration
+        url: /pyhive.docs/docs/home-assistant
+      - title: Standalone — Async
+        url: /pyhive.docs/docs/standalone-async
+      - title: Standalone — Sync
+        url: /pyhive.docs/docs/standalone-sync
+  - title: "API Reference"
+    children:
+      - title: Heating
+        url: /pyhive.docs/docs/api/heating
+      - title: Hot Water
+        url: /pyhive.docs/docs/api/hotwater
       - title: Lights
-        url: /pyhiveapi.docs/docs/api/lights
-      - title: Plugs
-        url: /pyhiveapi.docs/docs/api/plugs
+        url: /pyhive.docs/docs/api/lights
+      - title: Smart Plugs
+        url: /pyhive.docs/docs/api/plugs
+      - title: Sensors
+        url: /pyhive.docs/docs/api/sensors
+      - title: Hub / Sense
+        url: /pyhive.docs/docs/api/hub
+      - title: Actions
+        url: /pyhive.docs/docs/api/actions
+  - title: "Reference"
+    children:
+      - title: Exceptions
+        url: /pyhive.docs/docs/exceptions
+      - title: Migration Guide
+        url: /pyhive.docs/docs/migration
   - title: "Examples"
     children:
-      - title: API
-        url: /pyhiveapi.docs/docs/examples/api
-      - title: Session
-        url: /pyhiveapi.docs/docs/examples/api
+      - title: Auth & API
+        url: /pyhive.docs/docs/examples/api
+      - title: Full Session
+        url: /pyhive.docs/docs/examples/session
 
 api:
   - title: Home
-    url: /pyhiveapi.docs/
-  - title: "API"
+    url: /pyhive.docs/
+  - title: "API Reference"
     children:
+      - title: Heating
+        url: /pyhive.docs/docs/api/heating
+      - title: Hot Water
+        url: /pyhive.docs/docs/api/hotwater
       - title: Lights
-        url: /pyhiveapi.docs/docs/api/lights
-      - title: Plugs
-        url: /pyhiveapi.docs/docs/api/plugs
+        url: /pyhive.docs/docs/api/lights
+      - title: Smart Plugs
+        url: /pyhive.docs/docs/api/plugs
+      - title: Sensors
+        url: /pyhive.docs/docs/api/sensors
+      - title: Hub / Sense
+        url: /pyhive.docs/docs/api/hub
+      - title: Actions
+        url: /pyhive.docs/docs/api/actions
 
-example:
+guides:
   - title: Home
-    url: /pyhiveapi.docs/
-  - title: Examples
+    url: /pyhive.docs/
+  - title: "Guides"
     children:
-      - title: API
-        url: /pyhiveapi.docs/docs/examples/api
+      - title: Getting Started
+        url: /pyhive.docs/docs/getting-started
+      - title: Authentication
+        url: /pyhive.docs/docs/authentication
       - title: Session
-        url: /pyhiveapi.docs/docs/examples/session
+        url: /pyhive.docs/docs/session
+      - title: Home Assistant Integration
+        url: /pyhive.docs/docs/home-assistant
+      - title: Standalone — Async
+        url: /pyhive.docs/docs/standalone-async
+      - title: Standalone — Sync
+        url: /pyhive.docs/docs/standalone-sync
+      - title: Exceptions
+        url: /pyhive.docs/docs/exceptions
+      - title: Migration Guide
+        url: /pyhive.docs/docs/migration
