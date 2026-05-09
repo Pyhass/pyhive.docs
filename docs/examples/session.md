@@ -23,7 +23,7 @@ async def main():
     if result.get("ChallengeName") == SMS_REQUIRED:
         code = input("SMS code: ")
         result = await auth.sms_2fa(code, result)
-        device_data = auth.get_device_data()
+        device_data = await auth.get_device_data()
         # Persist device_data for future runs
     else:
         device_data = None  # Load from storage if available

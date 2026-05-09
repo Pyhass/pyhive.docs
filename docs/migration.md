@@ -177,6 +177,53 @@ In older versions, device keys were passed as constructor arguments. In v2.0.0, 
 
 ---
 
+## Internal package restructure (v2.0.0+)
+
+The following changes are **internal** — they do not affect the public API (`from apyhiveapi import Hive, Auth`). Code that imports through the top-level package requires no changes.
+
+### New subpackage layout
+
+Device modules and session logic have moved into dedicated subpackages:
+
+| Old path | New path |
+|---|---|
+| `apyhiveapi.heating` | `apyhiveapi.devices.heating` |
+| `apyhiveapi.hotwater` | `apyhiveapi.devices.hotwater` |
+| `apyhiveapi.light` | `apyhiveapi.devices.light` |
+| `apyhiveapi.plug` | `apyhiveapi.devices.plug` |
+| `apyhiveapi.sensor` | `apyhiveapi.devices.sensor` |
+| `apyhiveapi.hub` | `apyhiveapi.devices.hub` |
+| `apyhiveapi.action` | `apyhiveapi.devices.action` |
+| `apyhiveapi.boost` | `apyhiveapi.devices.boost` |
+| `apyhiveapi.color` | `apyhiveapi.devices.color` |
+| `apyhiveapi.device_attributes` | `apyhiveapi.helper.device_attributes` |
+| `apyhiveapi.session_tokens` | `apyhiveapi.session.auth` |
+| `apyhiveapi.session_polling` | `apyhiveapi.session.polling` |
+| `apyhiveapi.session_discovery` | `apyhiveapi.session.discovery` |
+
+**Shim files** at the old paths emit a `DeprecationWarning` and re-export the same symbols — so old direct imports continue to work during a migration window:
+
+```python
+# Still works (shim), but emits DeprecationWarning:
+from apyhiveapi.heating import Climate
+
+# Preferred:
+from apyhiveapi.devices.heating import Climate
+```
+
+### `auth.get_device_data()` is now async
+
+The method was already defined `async def` but docs previously omitted `await`. Update async code:
+
+```diff
+- device_data = auth.get_device_data()
++ device_data = await auth.get_device_data()
+```
+
+The sync (`pyhiveapi`) package is unaffected — no `await` needed there.
+
+---
+
 ## Summary checklist
 
 - [ ] Update `requirements.txt`: `pyhiveapi` → `pyhive-integration`

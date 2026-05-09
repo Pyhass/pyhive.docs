@@ -37,7 +37,7 @@ if result.get("ChallengeName") == SMS_REQUIRED:
     result = await auth.sms_2fa(sms_code, result)
 
 tokens = result["AuthenticationResult"]
-device_data = auth.get_device_data()
+device_data = await auth.get_device_data()
 # Store tokens and device_data in config entry
 ```
 

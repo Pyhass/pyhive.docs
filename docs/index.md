@@ -66,12 +66,39 @@ pip install pyhive-integration
 
 ```
 pyhive-integration (PyPI)
-├── apyhiveapi/          ← async package (source of truth, in src/)
-│   ├── Hive             ← public entry point; inherits HiveSession
-│   ├── Auth             ← AWS Cognito SRP authentication
-│   ├── API              ← async HTTP client (HiveApiAsync)
-│   └── device modules   ← heating, hotwater, light, switch, sensor, hub, action
-└── pyhiveapi/           ← sync package (auto-generated from apyhiveapi via unasync)
+├── apyhiveapi/              ← async package (source of truth, in src/)
+│   ├── hive.py              ← Hive — public entry point; inherits HiveSession
+│   ├── __init__.py          ← exports Hive, Auth, SMS_REQUIRED, all exceptions
+│   ├── api/
+│   │   ├── hive_auth_async.py  ← HiveAuthAsync — AWS Cognito SRP login flows
+│   │   ├── hive_async_api.py   ← HiveApiAsync — all HTTP calls to beekeeper API
+│   │   ├── device_registration.py  ← DeviceRegistrationMixin — Cognito device lifecycle
+│   │   └── srp_crypto.py           ← pure SRP/HKDF crypto functions
+│   ├── session/
+│   │   ├── __init__.py      ← HiveSession — composes the four session mixins
+│   │   ├── auth.py          ← SessionAuthMixin — login, token refresh, retry backoff
+│   │   ├── polling.py       ← PollingMixin — rate-limited polling, cache, get_devices
+│   │   └── discovery.py     ← DiscoveryMixin — start_session, create_devices, add_list
+│   ├── devices/
+│   │   ├── heating.py       ← HiveHeating / Climate
+│   │   ├── hotwater.py      ← HiveHotwater / WaterHeater
+│   │   ├── light.py         ← HiveLight / Light
+│   │   ├── plug.py          ← HiveSmartPlug / Switch
+│   │   ├── sensor.py        ← HiveSensor / Sensor
+│   │   ├── hub.py           ← HiveHub
+│   │   ├── action.py        ← HiveAction
+│   │   ├── boost.py         ← BoostMixin (shared by heating + hotwater)
+│   │   └── color.py         ← LightColorHandler (colour sub-domain for lights)
+│   └── helper/
+│       ├── const.py             ← HIVE_TYPES, PRODUCTS, DEVICES, HIVETOHA, HTTP_OK …
+│       ├── hivedataclasses.py   ← Device, EntityConfig, SessionTokens, SessionConfig
+│       ├── device_attributes.py ← HiveAttributes — HA state attribute computation
+│       ├── device_handler_base.py ← BaseDeviceHandler — shared set_state plumbing
+│       ├── compat_aliases.py    ← camelCase alias mixins for HA backwards compat
+│       ├── hive_helper.py       ← HiveHelper — name resolution, schedule parsing
+│       ├── hive_exceptions.py   ← all custom exceptions
+│       └── map.py               ← Map — dict with attribute-style access
+└── pyhiveapi/               ← sync package (auto-generated from apyhiveapi via unasync)
     └── (identical API, no await keywords)
 ```
 

@@ -32,7 +32,7 @@ async def main():
         code = input("Enter the SMS code sent to your phone: ")
         tokens = await auth.sms_2fa(code, tokens)
         # Save device credentials for future logins (no SMS required next time)
-        device_data = auth.get_device_data()
+        device_data = await auth.get_device_data()
         print("Save these for future logins:", device_data)
 
     # 2. Start a session

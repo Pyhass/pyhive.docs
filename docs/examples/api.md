@@ -23,7 +23,7 @@ async def first_login():
         result = await auth.sms_2fa(code, result)
         # Device registration is automatic after sms_2fa.
         # Save these credentials for future device logins (no SMS needed).
-        device_data = auth.get_device_data()
+        device_data = await auth.get_device_data()
         print("Device group key:", device_data[0])
         print("Device key:",       device_data[1])
         print("Device password:",  device_data[2])
