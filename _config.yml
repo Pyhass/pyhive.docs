@@ -12,6 +12,18 @@ simple_search: https://www.google.com/search
 description: Documentation for pyhive-integration v2.0.0 — async and sync Python library for the Hive smart home platform.
 theme: jekyll-theme-slate
 
+# Files that are not part of the published site. Setting `exclude` replaces
+# Jekyll's defaults on Jekyll 3 (used by github-pages), so they are repeated.
+exclude:
+  - CLAUDE.md
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
 permalink: /blog/:year/:month/:day/:title/
 markdown: kramdown
 pre-commit:
