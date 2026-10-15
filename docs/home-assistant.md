@@ -113,7 +113,7 @@ state         = device.status["state"]                 # bool
 brightness    = device.status["brightness"]            # int 0-255
 color_temp    = device.status.get("color_temp")        # int mireds (tunable/colour lights)
 color_mode    = device.status.get("mode")              # "COLOUR" | "WHITE"
-hs_color      = device.status.get("hs_color")          # tuple (colour lights in COLOUR mode)
+hs_color      = device.status.get("hs_color")          # tuple (r, g, b) despite the name (colour lights in COLOUR mode)
 
 # Switch / Smart Plug
 device = await hive.switch.get_switch(device)

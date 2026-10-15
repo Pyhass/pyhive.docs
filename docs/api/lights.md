@@ -57,7 +57,7 @@ device.status["state"]           # bool — True = on
 device.status["brightness"]      # int 0–255
 device.status.get("color_temp")  # int mireds (tuneablelight / colourtuneablelight)
 device.status.get("mode")        # "COLOUR" | "WHITE" (colourtuneablelight)
-device.status.get("hs_color")    # tuple (h, s) — present when mode == "COLOUR"
+device.status.get("hs_color")    # tuple (r, g, b), each 0–255 — present when mode == "COLOUR"
 ```
 
 Returns the cached device state if `should_use_cached_data()` is `True`.

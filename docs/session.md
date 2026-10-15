@@ -178,7 +178,7 @@ success = await hive.force_update()
 
 ### Scan interval
 
-Default scan interval is 120 seconds. It is set on `hive.config.scan_interval` as a `timedelta`. Home Assistant controls this via the integration config — `updateInterval()` is a no-op alias retained for backwards compatibility.
+Default scan interval is 120 seconds. It is stored on `hive.config.scan_interval` as a `timedelta`. Change it with `await hive.update_interval(seconds)` (seconds or a `timedelta`, minimum 15 seconds), or pass `"options": {"scan_interval": seconds}` to `start_session()` — Home Assistant does this from the integration options. `updateInterval()` is an alias of `update_interval()`.
 
 ---
 

@@ -113,15 +113,16 @@ Camera device support was removed in v2.0.0. If your code references `hive.camer
 
 ---
 
-## `updateInterval()` is now a no-op
+## Scan interval
 
-The `updateInterval(new_interval)` method no longer sets the scan interval. It always returns `True` and does nothing. This alias is kept for backwards compatibility with Home Assistant integrations that call it.
+`update_interval(new_interval)` sets the polling interval. It accepts seconds or a `timedelta`, and intervals below 15 seconds are raised to 15 seconds. `updateInterval()` remains as an alias.
 
-To control the scan interval, set it directly on the session config:
+`start_session()` still reads `options.scan_interval` from the config, as Home Assistant passes it:
 
 ```python
-from datetime import timedelta
-hive.config.scan_interval = timedelta(seconds=60)
+await hive.update_interval(60)
+# or
+await hive.start_session({..., "options": {"scan_interval": 60}})
 ```
 
 ---
